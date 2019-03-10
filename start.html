@@ -42,15 +42,24 @@
         var socket = io("http://127.0.0.1:3000");
         $("#start_button").on("click", () => {
           console.log("start clicked");
-          socket.emit("start", "start");
+          socket.emit("action", "start");
         });
         $("#stop_button").on("click", () => {
           console.log("stop clicked");
-          socket.emit("stop", "stop");
+          socket.emit("action", "stop");
         });
-        socket.on("get results", result => {
+        socket.on("get-results", result => {
           $("#result").append(
             "<li class='list-group-item'>" + result + "</li>"
+          );
+        });
+        socket.on("welcome", result => {
+          console.log(result);
+        });
+        socket.on("start-swim", result => {
+          console.log(result);
+          $("#result").append(
+            "<li class='list-group-item'>" + "start time: " + result + "</li>"
           );
         });
       });

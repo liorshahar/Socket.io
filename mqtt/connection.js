@@ -1,5 +1,10 @@
+/* 
+  Connect to MQTT broker
+*/
 const mqtt = require("mqtt");
 const mqttrouter = require("mqtt-router");
+
+// Connection deatils
 var options = {
   port: 17022,
   host: "mqtt://m24.cloudmqtt.com",
@@ -18,12 +23,14 @@ var options = {
   encoding: "utf8"
 };
 
-// client connection
+// Client connection
 var client = mqtt.connect("mqtt://m24.cloudmqtt.com", options);
 client.on("connect", () => {
   console.log("connected to mqtt://m24.cloudmqtt.com");
 });
-// enable the subscription router
+
+// Enable the subscription router
 var router = mqttrouter.wrap(client);
 
+// Exporting two objects
 module.exports = { mqttClient: client, mqttRouter: router };
