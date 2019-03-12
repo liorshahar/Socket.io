@@ -5,49 +5,54 @@ const http = require("http").createServer();
 const io = require("socket.io")(http);
 const mqttRouter = require("./mqtt/connection").mqttRouter;
 const mqttClient = require("./mqtt/connection").mqttClient;
+let Record = require("./utils/recordObject");
 
-let realStartTime;
-let touchSensorOneTime;
-let touchSensorTwoTime;
-let stop = false;
-let start = false;
-let sensorOneIsTouched = false;
-let sensorTwoIsTouched = false;
-let results = [];
-
+let training_id = 1;
+let exersice_id = 1;
+let isStart = new Boolean(true);
+let record = new Record(training_id, exersice_id);
 //==========================MQTT==============================================================
 
-// subscribe to messages for client-connected
-mqttRouter.subscribe("client-connected", function(topic, message) {
-  console.log(
-    "received from " + topic + ": " + "client connected-> " + message.toString()
-  );
-});
-// subscribe to messages for start-timestamp
-// the real time when the swimmer jump
-mqttRouter.subscribe("start-timestamp", function(topic, message) {
-  console.log(
-    "received from " + topic + ": " + "start-timestamp-> " + message.toString()
-  );
-
-  console.log(start);
-  results.push({ start: parseInt(message) });
-  console.log("get start time from node mcu: " + parseInt(message));
-  io.sockets.emit("start-swim", message.toString());
+// subscribe to the real time stamp of race launch
+mqttRouter.subscribe("swimTouch/startTime", function(topic, message) {
+  console.log("swimTouch/startTime: " + message.toString());
+  let start = parseInt(message);
+  // Check if there is any exercise the execute...
+  if (isStart && record) {
+    record.setStartTime(start);
+    console.log("start time-> " + start);
+  } else {
+    console.log("exersice already start");
+  }
 });
 
-// subscribe to messages for touch-time
-// from sensor 1
-mqttRouter.subscribe("touch-time1", function(topic, message) {
-  console.log("received from " + topic + ": " + message.toString());
-  results.push({ "touch from sensor1": message.toString() });
+// subscribe to the real time stamp of race launch
+mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
+  console.log("swimTouch/jumpTime: " + message.toString());
+  let splitMessage = message.toString().split(" ");
+  let route = splitMessage[1];
+  let jump_time = parseInt(splitMessage[splitMessage.length - 1]);
+  record.setJumpTime(route, jump_time);
 });
 
-// subscribe to messages for touch-time
-// from sensor 2
-mqttRouter.subscribe("touch-time2", function(topic, message) {
-  console.log("received from " + topic + ": " + message.toString());
-  results.push({ "touch from sensor2": message.toString() });
+// subscribe to messages for wall sensors
+mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
+  console.log("swimTouch/WallSensor: " + message.toString());
+  let splitMessage = message.toString().split(" ");
+  let route = splitMessage[1];
+  let touch_time = parseInt(splitMessage[splitMessage.length - 1]);
+  record.setResults(route, touch_time);
+  io.sockets.emit("start-swim", record);
+});
+
+// subscribe to connected new device
+mqttRouter.subscribe("swimTouch/nodeMCUConnected", function(topic, message) {
+  console.log("swimTouch/nodeMCUConnected: " + message.toString());
+});
+
+// subscribe to connected devices log
+mqttRouter.subscribe("swimTouch/connectedDevicesLog", function(topic, message) {
+  console.log("swimTouch/connectedDevicesLog: " + message.toString());
 });
 
 //======================Socket.IO=========================================================
