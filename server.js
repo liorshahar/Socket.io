@@ -9,40 +9,54 @@ let Record = require("./utils/recordObject");
 
 let training_id = 1;
 let exersice_id = 1;
-let isStart = new Boolean(true);
-let record = new Record(training_id, exersice_id);
+let isStart = false;
+let lockStart = false;
+let record;
+
+let globalStartTime = 0;
+/* TODO */
+/*
+ * List of connected devices and routes
+   Check if jump time < start Time
+ */
+
 //==========================MQTT==============================================================
 
 // subscribe to the real time stamp of race launch
 mqttRouter.subscribe("swimTouch/startTime", function(topic, message) {
-  console.log("swimTouch/startTime: " + message.toString());
-  let start = parseInt(message);
-  // Check if there is any exercise the execute...
-  if (isStart && record) {
-    record.setStartTime(start);
-    console.log("start time-> " + start);
-  } else {
-    console.log("exersice already start");
+  let startTime = new Date().getTime();
+  if (isStart && message.toString() === "start") {
+    console.log("swimTouch/startTime: " + message.toString());
+    globalStartTime = startTime;
+    lockStart = true;
   }
 });
 
 // subscribe to the real time stamp of race launch
 mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
-  console.log("swimTouch/jumpTime: " + message.toString());
-  let splitMessage = message.toString().split(" ");
-  let route = splitMessage[1];
-  let jump_time = parseInt(splitMessage[splitMessage.length - 1]);
-  record.setJumpTime(route, jump_time);
+  let jump_time = new Date().getTime();
+  if (isStart && record) {
+    console.log("swimTouch/jumpTime: " + message.toString());
+    let splitMessage = message.toString().split(" ");
+    let route = splitMessage[1];
+    jump_time = parseFloat((jump_time - globalStartTime) / 1000);
+    console.log("jump time: route" + route + ": " + jump_time);
+    record.setJumpTime(route, jump_time);
+  }
 });
 
 // subscribe to messages for wall sensors
 mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
-  console.log("swimTouch/WallSensor: " + message.toString());
-  let splitMessage = message.toString().split(" ");
-  let route = splitMessage[1];
-  let touch_time = parseInt(splitMessage[splitMessage.length - 1]);
-  record.setResults(route, touch_time);
-  io.sockets.emit("start-swim", record);
+  let touch_time = new Date().getTime();
+  if (isStart && record) {
+    console.log("swimTouch/WallSensor: " + message.toString());
+    let splitMessage = message.toString().split(" ");
+    let route = splitMessage[1];
+    touch_time = parseFloat((touch_time - globalStartTime) / 1000);
+    console.log("touch time route" + route + ": " + touch_time);
+    record.setResults(route, touch_time);
+  }
+  // io.sockets.emit("start-swim", record);
 });
 
 // subscribe to connected new device
@@ -66,13 +80,20 @@ io.on("connection", socket => {
   socket.on("action", action => {
     console.log("coach press -> " + action);
     if (action === "start") {
-      if (!start) {
-        start = true;
-        mqttClient.publish("swimTouch", "start");
+      if (!isStart) {
+        isStart = true;
+        record = new Record(training_id, exersice_id);
+        mqttClient.publish("swimTouch/start", "start");
+      } else {
+        console.log("already start");
       }
     } else if (action === "stop") {
-      start = false;
-      mqttClient.publish("swimTouch", "stop");
+      isStart = false;
+      if (record) {
+        io.sockets.emit("start-swim", record);
+        record = null;
+      }
+      globalStartTime = 0;
     }
   });
   // When coach disconnected
