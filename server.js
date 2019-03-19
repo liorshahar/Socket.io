@@ -80,7 +80,7 @@ io.on("connection", socket => {
     console.log("coach press -> " + model.action);
     if (model.action === "start" && !isStart) {
       isStart = true;
-      record = new Record(model.exersice_id);
+      record = new Record(model.exercise_id);
       mqttClient.publish("swimTouch/start", "start");
     } else if (model.action === "stop") {
       isStart = false;
