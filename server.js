@@ -78,9 +78,9 @@ io.on("connection", socket => {
   // When coach press start on html page
   socket.on("action", action => {
     console.log("coach press -> " + action);
-    if (action === "start" && !isStart) {
+    if (action.start === "start" && !isStart) {
       isStart = true;
-      record = new Record(training_id, exersice_id);
+      record = new Record(action.exersice_id);
       mqttClient.publish("swimTouch/start", "start");
     } else if (action === "stop") {
       isStart = false;
