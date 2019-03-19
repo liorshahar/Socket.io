@@ -1,6 +1,6 @@
 class Record {
-  constructor(training_id, exercise_id) {
-    this.training_id = training_id;
+  constructor(exercise_id) {
+    //this.training_id = training_id;
     this.exercise_id = exercise_id;
     this.date = new Date();
     this.routes = {};
