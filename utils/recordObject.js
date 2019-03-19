@@ -6,16 +6,12 @@ class Record {
     this.routes = {};
   }
 
-  setStartTime(start_time) {
-    this.start_time = start_time;
-  }
-
   setResults(route, touch_time) {
     let routeObj = this.routes[`route${route}`];
     if (!routeObj) {
       routeObj = this.routes[`route${route}`] = new Route();
     }
-    routeObj.results.push((touch_time - this.start_time) / 1000);
+    routeObj.results.push(touch_time);
   }
 
   setJumpTime(route, jump_time) {
@@ -23,7 +19,9 @@ class Record {
     if (!routeObj) {
       routeObj = this.routes[`route${route}`] = new Route();
     }
-    routeObj.jump_time = (jump_time - this.start_time) / 1000;
+    if (!routeObj.jump_time) {
+      routeObj.jump_time = jump_time;
+    }
   }
 }
 
