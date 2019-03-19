@@ -1,4 +1,4 @@
-const port = 3000 || process.env.PORT;
+const port = 3000;
 const http = require("http").createServer();
 const io = require("socket.io")(http);
 const mqttRouter = require("./mqtt/connection").mqttRouter;
@@ -97,7 +97,7 @@ io.on("connection", socket => {
   });
 });
 
-http.listen(port, () => {
+http.listen(port || process.env.PORT, () => {
   console.log("Server is listenin on local host prot: " + port);
 });
 

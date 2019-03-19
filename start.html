@@ -39,7 +39,7 @@
     <script>
       $(function() {
         console.log("page up");
-        var socket = io("http://127.0.0.1:3000");
+        var socket = io("https://record-system-server.herokuapp.com:3000");
         $("#start_button").on("click", () => {
           console.log("start clicked");
           socket.emit("action", "start");
