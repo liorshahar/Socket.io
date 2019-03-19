@@ -97,7 +97,7 @@ io.on("connection", socket => {
   });
 });
 
-http.listen(port || process.env.PORT, () => {
+http.listen(process.env.PORT || port, () => {
   console.log("Server is listenin on local host prot: " + port);
 });
 
