@@ -76,13 +76,13 @@ io.on("connection", socket => {
   console.log("coach connected to server");
   socket.emit("welcome", "Hello coach and Welcome to Socket.io Server");
   // When coach press start on html page
-  socket.on("action", action => {
-    console.log("coach press -> " + action);
-    if (action.start === "start" && !isStart) {
+  socket.on("action", model => {
+    console.log("coach press -> " + model.action);
+    if (model.action === "start" && !isStart) {
       isStart = true;
-      record = new Record(action.exersice_id);
+      record = new Record(model.exersice_id);
       mqttClient.publish("swimTouch/start", "start");
-    } else if (action === "stop") {
+    } else if (model.action === "stop") {
       isStart = false;
       if (record) {
         io.sockets.emit("stop-swim", record);
