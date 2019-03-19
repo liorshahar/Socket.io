@@ -37,6 +37,7 @@ mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
     let splitMessage = message.toString().split(" ");
     let route = splitMessage[1];
     jump_time = parseFloat((jump_time - globalStartTime) / 1000);
+    io.sockets.emit("jumpTime", { route: route, jumpTime: jump_time });
     console.log("jump time: route" + route + ": " + jump_time);
     record.setJumpTime(route, jump_time);
   }
@@ -51,6 +52,7 @@ mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
     let splitMessage = message.toString().split(" ");
     let route = splitMessage[1];
     touch_time = parseFloat((touch_time - globalStartTime) / 1000);
+    io.sockets.emit("WallSensor", { route: route, touchTime: touch_time });
     console.log("touch time route" + route + ": " + touch_time);
     record.setResults(route, touch_time);
   }
@@ -83,7 +85,7 @@ io.on("connection", socket => {
     } else if (action === "stop") {
       isStart = false;
       if (record) {
-        io.sockets.emit("start-swim", record);
+        io.sockets.emit("stop-swim", record);
         record = null;
       }
       globalStartTime = 0;
