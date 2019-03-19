@@ -1,19 +1,16 @@
-const express = require("express");
-const app = express();
 const port = 3000;
 const http = require("http").createServer();
 const io = require("socket.io")(http);
 const mqttRouter = require("./mqtt/connection").mqttRouter;
 const mqttClient = require("./mqtt/connection").mqttClient;
-let Record = require("./utils/recordObject");
+const Record = require("./utils/recordObject");
 
 let training_id = 1;
 let exersice_id = 1;
 let isStart = false;
-let lockStart = false;
 let record;
-
 let globalStartTime = 0;
+
 /* TODO */
 /*
  * List of connected devices and routes
@@ -22,17 +19,17 @@ let globalStartTime = 0;
 
 //==========================MQTT==============================================================
 
-// subscribe to the real time stamp of race launch
+// subscribe to startTime topic => get start message when the race start
 mqttRouter.subscribe("swimTouch/startTime", function(topic, message) {
   let startTime = new Date().getTime();
   if (isStart && message.toString() === "start") {
     console.log("swimTouch/startTime: " + message.toString());
     globalStartTime = startTime;
-    lockStart = true;
   }
 });
 
-// subscribe to the real time stamp of race launch
+// subscribe to jumpTime topic => receive a of jumping time from all jumpers
+// message format => "route <number>"
 mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
   let jump_time = new Date().getTime();
   if (isStart && record) {
@@ -45,7 +42,8 @@ mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
   }
 });
 
-// subscribe to messages for wall sensors
+// subscribe to WallSensor topic => receive a message for each touch on the wall
+// message format => "route <number>"
 mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
   let touch_time = new Date().getTime();
   if (isStart && record) {
@@ -56,7 +54,6 @@ mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
     console.log("touch time route" + route + ": " + touch_time);
     record.setResults(route, touch_time);
   }
-  // io.sockets.emit("start-swim", record);
 });
 
 // subscribe to connected new device
@@ -79,14 +76,10 @@ io.on("connection", socket => {
   // When coach press start on html page
   socket.on("action", action => {
     console.log("coach press -> " + action);
-    if (action === "start") {
-      if (!isStart) {
-        isStart = true;
-        record = new Record(training_id, exersice_id);
-        mqttClient.publish("swimTouch/start", "start");
-      } else {
-        console.log("already start");
-      }
+    if (action === "start" && !isStart) {
+      isStart = true;
+      record = new Record(training_id, exersice_id);
+      mqttClient.publish("swimTouch/start", "start");
     } else if (action === "stop") {
       isStart = false;
       if (record) {
@@ -94,6 +87,8 @@ io.on("connection", socket => {
         record = null;
       }
       globalStartTime = 0;
+    } else {
+      console.log("already start");
     }
   });
   // When coach disconnected
