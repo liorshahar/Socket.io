@@ -11,16 +11,20 @@ let training_id = 1;
 let exersice_id = 1;
 let isStart = new Boolean(true);
 let record = new Record(training_id, exersice_id);
+let startTimeTest;
 //==========================MQTT==============================================================
 
 // subscribe to the real time stamp of race launch
 mqttRouter.subscribe("swimTouch/startTime", function(topic, message) {
+  let startTime = new Date().getTime();
   console.log("swimTouch/startTime: " + message.toString());
-  let start = parseInt(message);
+  if (message.toString() === "start") {
+    startTimeTest = startTime;
+  }
   // Check if there is any exercise the execute...
   if (isStart && record) {
-    record.setStartTime(start);
-    console.log("start time-> " + start);
+    record.setStartTime(startTime);
+    console.log("start time-> " + startTime);
   } else {
     console.log("exersice already start");
   }
@@ -28,19 +32,21 @@ mqttRouter.subscribe("swimTouch/startTime", function(topic, message) {
 
 // subscribe to the real time stamp of race launch
 mqttRouter.subscribe("swimTouch/jumpTime", function(topic, message) {
+  let jump_time = new Date().getTime();
   console.log("swimTouch/jumpTime: " + message.toString());
   let splitMessage = message.toString().split(" ");
   let route = splitMessage[1];
-  let jump_time = parseInt(splitMessage[splitMessage.length - 1]);
+  let jump_time = parseFloat((jump_time - startTimeTest) / 1000);
   record.setJumpTime(route, jump_time);
 });
 
 // subscribe to messages for wall sensors
 mqttRouter.subscribe("swimTouch/WallSensor", function(topic, message) {
+  let touch_time = new Date().getTime();
   console.log("swimTouch/WallSensor: " + message.toString());
   let splitMessage = message.toString().split(" ");
   let route = splitMessage[1];
-  let touch_time = parseInt(splitMessage[splitMessage.length - 1]);
+  console.log("real-time: " + parseFloat((touch_time - startTimeTest) / 1000));
   record.setResults(route, touch_time);
   io.sockets.emit("start-swim", record);
 });
@@ -66,13 +72,12 @@ io.on("connection", socket => {
   socket.on("action", action => {
     console.log("coach press -> " + action);
     if (action === "start") {
-      if (!start) {
-        start = true;
-        mqttClient.publish("swimTouch", "start");
+      if (!isStart) {
+        isStart = true;
+        mqttClient.publish("swimTouch/start", "start");
       }
     } else if (action === "stop") {
-      start = false;
-      mqttClient.publish("swimTouch", "stop");
+      isStart = false;
     }
   });
   // When coach disconnected
